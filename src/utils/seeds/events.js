@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const Event = require("../../api/models/event");
 const events = require("../../api/data/events");
-const { connectDB } = require("../../config/db");
 
 const lanzarSemilla = async () => {
   try {
-    await connectDB();
+    await mongoose.connect("mongodb+srv://csevilla:RockTheCode2026!@mycluster.kqgfasi.mongodb.net/?appName=MyCluster");
+
     await Event.collection.drop();
     console.log("Colección de eventos eliminada.");
 

@@ -1,247 +1,257 @@
-# 🚀 Proyecto Backend - RockTheCode
+# Proyecto Backend - RockTheCode
 
-API REST construida con **Express.js** y **MongoDB Atlas** para la gestión de usuarios y eventos.
+API REST con Node.js, Express y MongoDB para gestionar usuarios y eventos con autenticación JWT, subida de imágenes a Cloudinary y relación bidireccional entre usuarios y eventos.
 
-## 📋 Tabla de Contenidos
+## Tabla de contenidos
 
 - [Descripción](#descripción)
-- [Tecnologías](#tecnologías)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Instalación](#instalación)
-- [Variables de Entorno](#variables-de-entorno)
-- [Modelos](#modelos)
-- [Endpoints de la API](#endpoints-de-la-api)
-- [Seed de Datos](#seed-de-datos)
-- [Roles y Permisos](#roles-y-permisos)
-- [Cloudinary](#cloudinary)
+- [Stack tecnológico](#stack-tecnológico)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Instalación y ejecución](#instalación-y-ejecución)
+- [Variables de entorno](#variables-de-entorno)
+- [Modelos de datos](#modelos-de-datos)
+- [Autenticación y autorización](#autenticación-y-autorización)
+- [Endpoints](#endpoints)
+- [Ejemplos de uso (todas las acciones)](#ejemplos-de-uso-todas-las-acciones)
+- [Semillas de datos](#semillas-de-datos)
+- [Documentación en Markdown (Dillinger)](#documentación-en-markdown-dillinger)
 
 ---
 
-## 📝 Descripción
+## Descripción
 
-Este proyecto consiste en una API REST que permite gestionar **usuarios** y **eventos**. Los usuarios pueden registrarse, iniciar sesión, subir una imagen de perfil (almacenada en Cloudinary) y apuntarse a eventos. El sistema implementa un control de roles (`user` y `admin`) con diferentes niveles de permisos.
+La API permite:
 
-### Características principales:
+- Registrar usuarios y autenticar login.
+- Subir imagen de perfil en Cloudinary.
+- Actualizar usuarios.
+- Gestionar eventos.
+- Relacionar eventos con usuarios y usuarios con eventos.
+- Cambiar rol de usuario (solo admin).
 
-- Autenticación mediante **JWT** (JSON Web Tokens)
-- Subida de imágenes con **Cloudinary** y **Multer**
-- Control de roles (`user` / `admin`)
-- Datos relacionados entre colecciones (Users ↔ Events)
-- Prevención de datos duplicados en el array de eventos del usuario
-- Seed de datos para la colección de eventos
-- Eliminación automática de imágenes en Cloudinary al eliminar usuario
-
----
-
-## 🛠 Tecnologías
-
-| Tecnología | Uso |
-| --- | --- |
-| **Node.js** | Entorno de ejecución |
-| **Express.js** | Framework del servidor |
-| **MongoDB Atlas** | Base de datos en la nube |
-| **Mongoose** | ODM para MongoDB |
-| **JWT** | Autenticación de usuarios |
-| **Bcrypt** | Encriptación de contraseñas |
-| **Cloudinary** | Almacenamiento de imágenes |
-| **Multer** | Middleware de subida de archivos |
-| **CORS** | Manejo de peticiones cross-origin |
-| **dotenv** | Variables de entorno |
+Base URL actual: `http://localhost:3003/api/v1`
 
 ---
 
-## 📂 Estructura del Proyecto
+## Stack tecnológico
 
-```
-proyecto-backend/
-├── index.js                          # Punto de entrada del servidor
+- Node.js
+- Express
+- MongoDB + Mongoose
+- JWT (`jsonwebtoken`)
+- `bcrypt`
+- Cloudinary
+- Multer + Multer Storage Cloudinary
+- dotenv
+
+---
+
+## Estructura del proyecto
+
+```txt
+Proyecto-backend/
+├── index.js
 ├── package.json
-├── .env                              # Variables de entorno
-├── .gitignore
 ├── README.md
 └── src/
-    ├── config/
-    │   ├── db.js                     # Conexión a MongoDB
-    │   ├── cloudinary.js             # Configuración de Cloudinary y Multer
-    │   └── jwt.js                    # Generación de tokens JWT
-    ├── middlewares/
-    │   └── auth.js                   # Middlewares de autenticación y autorización
     ├── api/
-    │   ├── models/
-    │   │   ├── User.js               # Modelo de Usuario
-    │   │   └── Event.js              # Modelo de Evento
     │   ├── controllers/
-    │   │   ├── users.controller.js   # Controladores de usuarios
-    │   │   └── events.controller.js  # Controladores de eventos
+    │   │   ├── event.js
+    │   │   └── user.js
+    │   ├── data/
+    │   │   └── events.js
+    │   ├── models/
+    │   │   ├── event.js
+    │   │   └── user.js
     │   └── routes/
-    │       ├── users.routes.js       # Rutas de usuarios
-    │       └── events.routes.js      # Rutas de eventos
-    └── seeds/
-        └── events.seed.js            # Seed de eventos
+    │       ├── event.js
+    │       └── user.js
+    ├── config/
+    │   ├── cloudinary.js
+    │   └── db.js
+    ├── middlewares/
+    │   ├── auth.js
+    │   └── file.js
+    └── utils/
+        ├── jwt.js
+        └── seeds/
+            ├── events.js
+            └── users
 ```
 
 ---
 
-## ⚙️ Instalación
+## Instalación y ejecución
 
-### 1. Clonar el repositorio
-
-```bash
-git clone <url-del-repositorio>
-cd proyecto-backend
-```
-
-### 2. Instalar dependencias
+1. Instala dependencias:
 
 ```bash
 npm install
 ```
 
-### 3. Configurar variables de entorno
+2. Crea/configura el archivo `.env`.
 
-Edita el archivo `.env` con tus datos reales (ver sección [Variables de Entorno](#variables-de-entorno)).
-
-### 4. Ejecutar el seed de datos
+3. Ejecuta en desarrollo:
 
 ```bash
-npm run seed
+npm run dev
 ```
 
-### 5. Iniciar el servidor
+4. Ejecuta en producción:
 
 ```bash
-# Modo desarrollo (con hot-reload)
-npm run dev
-
-# Modo producción
 npm start
 ```
 
-El servidor se ejecutará en `http://localhost:3000`
-
 ---
 
-## 🔐 Variables de Entorno
+## Variables de entorno
 
-El archivo `.env` contiene las siguientes variables:
+Variables usadas por el código actual:
 
 | Variable | Descripción |
 | --- | --- |
-| `PORT` | Puerto del servidor (default: 3000) |
-| `DB_URL` | URL de conexión a MongoDB Atlas |
-| `JWT_SECRET` | Clave secreta para firmar tokens JWT |
-| `CLOUDINARY_CLOUD_NAME` | Nombre del cloud en Cloudinary |
-| `CLOUDINARY_API_KEY` | API Key de Cloudinary |
-| `CLOUDINARY_API_SECRET` | API Secret de Cloudinary |
+| `DB_URL` | URI de conexión a MongoDB |
+| `JWT_SECRET` | Secreto para firmar/verificar tokens |
+| `CLOUD_NAME` | Cloud name de Cloudinary |
+| `API_KEY` | API key de Cloudinary |
+| `API_SECRET` | API secret de Cloudinary |
 
-> ⚠️ **Nota:** Normalmente el `.env` no se sube a GitHub, pero para facilitar la corrección de este proyecto escolar, se incluye en el repositorio.
+Ejemplo:
+
+```env
+PORT=3003
+DB_URL=mongodb+srv://...
+JWT_SECRET=tu_clave
+CLOUD_NAME=tu_cloud
+API_KEY=tu_api_key
+API_SECRET=tu_api_secret
+```
 
 ---
 
-## 📊 Modelos
+## Modelos de datos
 
 ### User
 
-| Campo | Tipo | Descripción |
-| --- | --- | --- |
-| `userName` | String | Nombre de usuario (mínimo 3 caracteres) |
-| `email` | String | Email único del usuario |
-| `password` | String | Contraseña encriptada (mínimo 6 caracteres) |
-| `role` | String | Rol del usuario: `user` o `admin` (default: `user`) |
-| `image` | String | URL de la imagen en Cloudinary |
-| `events` | [ObjectId] | Array de referencias a eventos (sin duplicados) |
-| `createdAt` | Date | Fecha de creación (automático) |
-| `updatedAt` | Date | Fecha de actualización (automático) |
+- `userName`: String (required)
+- `email`: String (required)
+- `password`: String (required, encriptada)
+- `role`: String (`user` | `admin`, default `user`)
+- `image`: String (required)
+- `events`: `[ObjectId]` referenciando `event`
 
 ### Event
 
-| Campo | Tipo | Descripción |
-| --- | --- | --- |
-| `title` | String | Título del evento |
-| `description` | String | Descripción del evento |
-| `date` | Date | Fecha del evento |
-| `location` | String | Ubicación del evento |
-| `category` | String | Categoría: música, deportes, tecnología, arte, gastronomía, educación, networking, otro |
-| `maxAttendees` | Number | Número máximo de asistentes (default: 100) |
-| `createdAt` | Date | Fecha de creación (automático) |
-| `updatedAt` | Date | Fecha de actualización (automático) |
+- `title`: String (required)
+- `description`: String (required)
+- `date`: Date (required)
+- `location`: String (required)
+- `users`: `[ObjectId]` referenciando `users`
+
+Relación actual: bidireccional (`User.events` <-> `Event.users`).
 
 ---
 
-## 🌐 Endpoints de la API
+## Autenticación y autorización
 
-### Base URL: `http://localhost:3000/api/v1`
+- La autenticación se envía con header:
 
-### 👤 Usuarios (`/users`)
-
-| Método | Ruta | Descripción | Auth | Rol |
-| --- | --- | --- | --- | --- |
-| `POST` | `/users/register` | Registrar usuario (con imagen) | ❌ | - |
-| `POST` | `/users/login` | Iniciar sesión | ❌ | - |
-| `GET` | `/users/` | Obtener todos los usuarios | ✅ | admin |
-| `GET` | `/users/:id` | Obtener usuario por ID | ✅ | cualquiera |
-| `PUT` | `/users/:id` | Actualizar perfil (con imagen) | ✅ | propio o admin |
-| `PUT` | `/users/:id/role` | Cambiar rol de usuario | ✅ | admin |
-| `DELETE` | `/users/:id` | Eliminar usuario | ✅ | propio o admin |
-| `PUT` | `/users/:id/events` | Añadir eventos al usuario | ✅ | propio o admin |
-| `DELETE` | `/users/:id/events/:eventId` | Eliminar evento del usuario | ✅ | propio o admin |
-
-### 📅 Eventos (`/events`)
-
-| Método | Ruta | Descripción | Auth | Rol |
-| --- | --- | --- | --- | --- |
-| `GET` | `/events/` | Obtener todos los eventos | ❌ | - |
-| `GET` | `/events/:id` | Obtener evento por ID | ❌ | - |
-| `POST` | `/events/` | Crear evento | ✅ | admin |
-| `PUT` | `/events/:id` | Actualizar evento | ✅ | admin |
-| `DELETE` | `/events/:id` | Eliminar evento | ✅ | admin |
-
----
-
-### Ejemplos de uso
-
-#### Registrar usuario
-
+```txt
+Authorization: Bearer <token>
 ```
+
+- Rutas protegidas usan middleware `isAuth`.
+- Cambio de rol usa además `isAdmin`.
+
+---
+
+## Endpoints
+
+### Usuarios
+
+| Método | Ruta | Auth | Permisos |
+| --- | --- | --- | --- |
+| POST | `/users/register` | No | Público |
+| POST | `/users/login` | No | Público |
+| GET | `/users` | Sí | Usuario autenticado |
+| GET | `/users/:id` | Sí | Usuario autenticado |
+| PUT | `/users/:id` | Sí | Propio usuario o admin |
+| PUT | `/users/:id/role` | Sí | Solo admin |
+| DELETE | `/users/:id` | Sí | Propio usuario o admin |
+| PUT | `/users/:id/events` | Sí | Propio usuario o admin |
+
+### Eventos
+
+| Método | Ruta | Auth | Permisos |
+| --- | --- | --- | --- |
+| GET | `/events` | No | Público |
+| GET | `/events/:id` | No | Público |
+| POST | `/events` | Sí | Usuario autenticado |
+| PUT | `/events/:id` | Sí | Usuario autenticado |
+| DELETE | `/events/:id` | Sí | Usuario autenticado |
+
+## Ejemplos de uso (todas las acciones)
+
+> Todos los ejemplos usan la base: `http://localhost:3003/api/v1`
+
+### 1) Registrar usuario
+
+```http
 POST /api/v1/users/register
 Content-Type: multipart/form-data
 
 Body (form-data):
-  - userName: "Juan"
-  - email: "juan@email.com"
-  - password: "123456"
-  - image: [archivo de imagen]
+- userName: "Cristian"
+- email: "cristian@email.com"
+- password: "123456"
+- image: [archivo]
 ```
 
-#### Login
+### 2) Login
 
-```
+```http
 POST /api/v1/users/login
 Content-Type: application/json
 
 {
-  "email": "juan@email.com",
+  "email": "cristian@email.com",
   "password": "123456"
 }
 ```
 
-#### Añadir eventos a un usuario (sin duplicados)
+### 3) Obtener todos los usuarios
 
-```
-PUT /api/v1/users/:id/events
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "events": ["eventId1", "eventId2"]
-}
+```http
+GET /api/v1/users
+Authorization: Bearer <TOKEN>
 ```
 
-#### Cambiar rol de un usuario (solo admin)
+### 4) Obtener usuario por ID
 
+```http
+GET /api/v1/users/USER_ID
+Authorization: Bearer <TOKEN>
 ```
-PUT /api/v1/users/:id/role
-Authorization: Bearer <token>
+
+### 5) Actualizar usuario
+
+```http
+PUT /api/v1/users/USER_ID
+Authorization: Bearer <TOKEN>
+Content-Type: multipart/form-data
+
+Body (form-data):
+- userName: "NuevoNombre"
+- email: "nuevo@email.com"
+- image: [archivo opcional]
+```
+
+### 6) Cambiar rol de usuario (solo admin)
+
+```http
+PUT /api/v1/users/USER_ID/role
+Authorization: Bearer <TOKEN_ADMIN>
 Content-Type: application/json
 
 {
@@ -249,62 +259,95 @@ Content-Type: application/json
 }
 ```
 
----
+### 7) Eliminar usuario
 
-## 🌱 Seed de Datos
-
-El proyecto incluye un seed para poblar la colección de **eventos** con datos de ejemplo.
-
-```bash
-npm run seed
+```http
+DELETE /api/v1/users/USER_ID
+Authorization: Bearer <TOKEN>
 ```
 
-Este comando:
-1. Se conecta a la base de datos
-2. Elimina todos los eventos existentes
-3. Inserta 10 eventos de ejemplo con diferentes categorías y ubicaciones
-4. Se desconecta de la base de datos
+### 8) Añadir eventos a usuario
+
+```http
+PUT /api/v1/users/USER_ID/events
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "events": ["EVENT_ID_1", "EVENT_ID_2"]
+}
+```
+
+### 9) Obtener todos los eventos
+
+```http
+GET /api/v1/events
+```
+
+### 10) Obtener evento por ID
+
+```http
+GET /api/v1/events/EVENT_ID
+```
+
+### 11) Crear evento
+
+```http
+POST /api/v1/events
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "title": "Hackathon Fullstack",
+  "description": "48h de desarrollo en equipo",
+  "date": "2026-04-10T09:00:00.000Z",
+  "location": "Barcelona"
+}
+```
+
+### 12) Actualizar evento
+
+```http
+PUT /api/v1/events/EVENT_ID
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "title": "Hackathon Fullstack v2",
+  "description": "Nueva edición",
+  "date": "2026-04-11T09:00:00.000Z",
+  "location": "Madrid"
+}
+```
+
+### 13) Eliminar evento
+
+```http
+DELETE /api/v1/events/EVENT_ID
+Authorization: Bearer <TOKEN>
+```
+
+### Flujo recomendado de prueba
+
+1. Registrar usuario.
+2. Hacer login y guardar `token`.
+3. Crear evento con ese token.
+4. Consultar eventos (`GET /events`).
+5. Añadir ese evento al usuario (`PUT /users/:id/events`).
+6. Consultar usuario por ID para verificar la relación.
 
 ---
 
-## 🔒 Roles y Permisos
+## Semillas de datos
 
-### Rol `user`
+Script disponible actualmente:
 
-- ✅ Registrarse y hacer login
-- ✅ Ver su perfil y el de otros usuarios
-- ✅ Actualizar su propio perfil
-- ✅ Eliminar su propia cuenta
-- ✅ Añadir/eliminar eventos de su propio perfil
-- ✅ Ver todos los eventos
-- ❌ **NO** puede cambiar roles
-- ❌ **NO** puede eliminar cuentas de otros usuarios
-- ❌ **NO** puede crear, editar o eliminar eventos
+```bash
+npm run eventsSeed
+```
 
-### Rol `admin`
-
-- ✅ Todo lo que puede hacer un `user`
-- ✅ Ver listado de todos los usuarios
-- ✅ Cambiar el rol de cualquier usuario
-- ✅ Eliminar cualquier cuenta de usuario
-- ✅ Crear, editar y eliminar eventos
-
-> **Importante:** El primer administrador se crea manualmente modificando el campo `role` a `"admin"` directamente desde MongoDB Atlas. A partir de ahí, los admins pueden cambiar el rol de otros usuarios.
+Este script carga eventos de ejemplo desde `src/api/data/events.js`.
 
 ---
 
-## ☁️ Cloudinary
 
-Las imágenes de perfil de los usuarios se almacenan en **Cloudinary**:
-
-- Se suben mediante `multer` y `multer-storage-cloudinary`
-- Se guardan en la carpeta `proyecto-backend-users`
-- Formatos permitidos: `jpg`, `jpeg`, `png`, `gif`, `webp`
-- Al eliminar un usuario, su imagen se elimina automáticamente de Cloudinary
-- Al actualizar la imagen de un usuario, la imagen anterior se elimina de Cloudinary
-
----
-
-## 👨‍💻 Autor
-
-**Cristian Sevilla** - Proyecto Backend para [RockTheCode](https://rockthecode.es/)

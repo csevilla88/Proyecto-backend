@@ -31,14 +31,10 @@ const register = async (req, res, next) => {
         email: userSaved.email,
         role: userSaved.role,
         image: userSaved.image,
-      },
-      token: generateToken(userSaved._id),
+      }
     });
   } catch (error) {
-    return res.status(400).json({
-      message: "Error al registrar usuario.",
-      error: error?.message || error,
-    });
+    return res.status(400).json("Error al registrar usuario.");
   }
 };
 
@@ -104,6 +100,10 @@ const updateUser = async (req, res, next) => {
       newUser.image = req.file.path;
     }
 
+  if (req.body.role && req.user.role !== "admin") {
+    return res.status(403).json("No puedes cambiar el rol de un usuario. Solo los admin pueden hacerlo.");
+  }
+
     const updatedUser = await User.findByIdAndUpdate(id, newUser, { new: true}).populate("events");
 
     return res.status(200).json( updatedUser);
@@ -119,7 +119,7 @@ const changeRole = async (req, res, next) => {
     const { role } = req.body;
 
     if (req.user.role !== "admin") {
-      return res.status(403).json("Acceso denegado. Se requiere rol de administrador.");
+      return res.status(403).json("Acceso denegado. Se requiere rol de admin.");
     }
 
     if (!["user", "admin"].includes(role)) {
@@ -166,7 +166,7 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-//  AÑADIR EVENTOS AL USUARIO 
+//AÑADIR EVENTOS AL USUARIO
 const addEventsToUser = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -186,25 +186,16 @@ const addEventsToUser = async (req, res, next) => {
       return res.status(400).json("Debes enviar IDs de eventos válidos.");
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { $addToSet: { events: { $each: validEventIds } } },
-      { new: true }
-    )
-      .populate("events")
-      .select("-password");
+    const updatedUser = await User.findByIdAndUpdate(id, { $addToSet: { events: { $each: validEventIds } } }, { new: true }).populate("events");     ;
 
     if (!updatedUser) {
       return res.status(404).json("Usuario no encontrado." );
     }
 
-    await Event.updateMany(
-      { _id: { $in: validEventIds } },
-      { $addToSet: { users: updatedUser._id } }
-    );
+    await Event.updateMany( { _id: { $in: validEventIds } }, { $addToSet: { users: updatedUser._id } });
 
     return res.status(200).json({
-      message: "Eventos añadidos correctamente (sin duplicados).",
+      message: "Eventos añadidos correctamente",
       user: updatedUser,
     });
   } catch (error) {
@@ -212,31 +203,6 @@ const addEventsToUser = async (req, res, next) => {
   }
 };
 
-//  ELIMINAR EVENTO DEL USUARIO 
-const removeEventFromUser = async (req, res, next) => {
-  try {
-    const { id, eventId } = req.params;
 
-    if (req.user._id.toString() !== id && req.user.role !== "admin") {
-      return res.status(403).json( "No puedes modificar los eventos de otro usuario." );
-    }
 
-    if (!mongoose.isValidObjectId(eventId)) {
-      return res.status(400).json("ID de evento no válido.");
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(id, { $pull: { events: eventId } }, { new: true }).populate("events");
-
-    if (!updatedUser) {
-      return res.status(404).json("Usuario no encontrado.");
-    }
-
-    await Event.findByIdAndUpdate(eventId, { $pull: { users: updatedUser._id } });
-
-    return res.status(200).json("Evento eliminado del usuario correctamente.", updatedUser);
-  } catch (error) {
-    return res.status(400).json("Error al eliminar evento.");
-  }
-};
-
-module.exports = {register, login, getUsers, getUserById, updateUser, changeRole, deleteUser, addEventsToUser, removeEventFromUser};
+module.exports = {register, login, getUsers, getUserById, updateUser, changeRole, deleteUser, addEventsToUser};

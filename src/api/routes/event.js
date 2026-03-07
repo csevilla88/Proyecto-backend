@@ -8,9 +8,9 @@ const eventsRouter = express.Router();
 eventsRouter.get("/", getEvents);
 eventsRouter.get("/:id", getEventById);
 
-// Rutas protegidas (solo admin)
-eventsRouter.post("/", isAuth, isAdmin, createEvent);
-eventsRouter.put("/:id", isAuth, isAdmin, updateEvent);
-eventsRouter.delete("/:id", isAuth, isAdmin, deleteEvent);
+// Rutas protegidas
+eventsRouter.post("/", isAuth, createEvent);
+eventsRouter.put("/:id", isAuth, updateEvent);
+eventsRouter.delete("/:id", isAuth, deleteEvent);
 
 module.exports = eventsRouter;

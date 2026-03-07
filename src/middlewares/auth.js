@@ -9,10 +9,6 @@ const isAuth = async (req, res, next) => {
         
         const user = await User.findById(id); 
 
-        if (!user) {
-          return res.status(401).json("No estás autorizado para acceder");
-        }
-
         user.password = undefined; 
         req.user = user; 
 
@@ -23,7 +19,7 @@ const isAuth = async (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== "admin") {
+  if (req.user.role !== "admin") {
     return res.status(403).json("Acceso denegado. Se requiere rol de administrador.");
   }
   next();
