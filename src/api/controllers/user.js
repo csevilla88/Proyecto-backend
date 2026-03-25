@@ -14,7 +14,7 @@ const register = async (req, res, next) => {
       return res.status(400).json({ message: "Ya existe un usuario con ese email." });
     }
 
-    const newUser = new User(req.body);
+    const newUser = new User({ userName, email, password });
     if (req.files && req.files.length > 0) {
       newUser.image = req.files[0].path;
     } else if (req.file) {
@@ -49,7 +49,8 @@ const login = async (req, res, next) => {
 
     if (bcrypt.compareSync(password, user.password)) {
       const token = generateToken(user._id);
-      return res.status(200).json({token, user});
+      const { password: _, ...userWithoutPassword } = user.toObject();
+      return res.status(200).json({ token, user: userWithoutPassword });
     } else {  
       return res.status(400).json("Contraseña incorrecta.");
     }
@@ -60,7 +61,7 @@ const login = async (req, res, next) => {
 
 const getUsers = async (req, res, next) => {
   try {
-    const users = await User.find().populate("events");
+    const users = await User.find().select("-password").populate("events");
     return res.status(200).json(users);
   } catch (error) {
     return res.status(500).json( "Error al obtener usuarios.");
@@ -70,7 +71,7 @@ const getUsers = async (req, res, next) => {
 const getUserById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).populate("events");
+    const user = await User.findById(id).select("-password").populate("events");
     if (!user) {
       return res.status(404).json("Usuario no encontrado." );
     }
@@ -89,24 +90,42 @@ const updateUser = async (req, res, next) => {
       return res.status(403).json("No puedes modificar el perfil de otro usuario.");
     }
 
-    const newUser = new User(req.body);
-    newUser._id = id;
+    // Un admin no puede cambiar el password de otro usuario
+    if (req.body.password && req.user._id.toString() !== id) {
+      return res.status(403).json("No puedes cambiar la contraseña de otro usuario.");
+    }
 
+    if (req.body.role && req.user.role !== "admin") {
+      return res.status(403).json("No puedes cambiar el rol de un usuario. Solo los admin pueden hacerlo.");
+    }
+
+    // Construir objeto de actualización solo con campos permitidos
+    const updateFields = {};
+    if (req.body.userName) updateFields.userName = req.body.userName;
+    if (req.body.email) updateFields.email = req.body.email;
+    if (req.body.role && req.user.role === "admin") updateFields.role = req.body.role;
+
+    // Si se actualiza la contraseña, encriptarla antes de guardar
+    if (req.body.password) {
+      updateFields.password = await bcrypt.hash(req.body.password, 10);
+    }
+
+    // Gestión de imagen. Si hay nueva borrar la anterior, si no conservar 
     if (req.file) {
       const oldUser = await User.findById(id);
       if (oldUser.image) {
         await deleteFile(oldUser.image);
       }
-      newUser.image = req.file.path;
+      updateFields.image = req.file.path;
     }
 
-  if (req.body.role && req.user.role !== "admin") {
-    return res.status(403).json("No puedes cambiar el rol de un usuario. Solo los admin pueden hacerlo.");
-  }
+    const updatedUser = await User.findByIdAndUpdate(id, { $set: updateFields }, { new: true }).select("-password").populate("events");
 
-    const updatedUser = await User.findByIdAndUpdate(id, newUser, { new: true}).populate("events");
+    if (!updatedUser) {
+      return res.status(404).json("Usuario no encontrado.");
+    }
 
-    return res.status(200).json( updatedUser);
+    return res.status(200).json(updatedUser);
   } catch (error) {
     return res.status(400).json("Error al actualizar usuario.");
   }
@@ -126,13 +145,10 @@ const changeRole = async (req, res, next) => {
       return res.status(400).json("Rol no válido. Debe ser 'user' o 'admin'." );
     }
 
-    const userToUpdate = await User.findById(id);
+    const userToUpdate = await User.findByIdAndUpdate(id, { role }, { new: true });
     if (!userToUpdate) {
       return res.status(404).json( "Usuario no encontrado." );
     }
-
-    userToUpdate.role = role;
-    await userToUpdate.save();
 
     return res.status(200).json(`Rol del usuario actualizado a '${role}' correctamente.`);
   } catch (error) {
@@ -186,7 +202,7 @@ const addEventsToUser = async (req, res, next) => {
       return res.status(400).json("Debes enviar IDs de eventos válidos.");
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, { $addToSet: { events: { $each: validEventIds } } }, { new: true }).populate("events");     ;
+    const updatedUser = await User.findByIdAndUpdate(id, { $addToSet: { events: { $each: validEventIds } } }, { new: true }).select("-password").populate("events");
 
     if (!updatedUser) {
       return res.status(404).json("Usuario no encontrado." );

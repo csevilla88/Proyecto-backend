@@ -40,9 +40,17 @@ const getEventById = async (req, res, next) => {
 const updateEvent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const newEvent = new Event(req.body);
-    newEvent._id = id;
-    const updatedEvent = await Event.findByIdAndUpdate(id, newEvent, {new: true});
+
+    const updateFields = {};
+    if (req.body.title) updateFields.title = req.body.title;
+    if (req.body.description) updateFields.description = req.body.description;
+    if (req.body.date) updateFields.date = req.body.date;
+    if (req.body.location) updateFields.location = req.body.location;
+
+    const updatedEvent = await Event.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
+    if (!updatedEvent) {
+      return res.status(404).json("Evento no encontrado.");
+    }
     return res.status(200).json("Evento actualizado correctamente.");
   } catch (error) {
     return res.status(400).json("Error al actualizar evento.");
@@ -56,6 +64,10 @@ const deleteEvent = async (req, res, next) => {
     if (!deletedEvent) {
       return res.status(404).json("Evento no encontrado.");
     }
+
+    // Eliminar referencia del evento en todos los usuarios que lo tenían asociado
+    await User.updateMany({ events: id }, { $pull: { events: id } });
+
     return res.status(200).json("Evento eliminado correctamente.");
   } catch (error) {
     return res.status(500).json("Error al eliminar evento.");

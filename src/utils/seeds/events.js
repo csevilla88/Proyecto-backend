@@ -2,9 +2,11 @@ const mongoose = require("mongoose");
 const Event = require("../../api/models/event");
 const events = require("../../api/data/events");
 
+require("dotenv").config();
+
 const lanzarSemilla = async () => {
   try {
-    await mongoose.connect("mongodb+srv://csevilla:RockTheCode2026!@mycluster.kqgfasi.mongodb.net/?appName=MyCluster");
+    await mongoose.connect(process.env.DB_URL);
 
     await Event.collection.drop();
     console.log("Colección de eventos eliminada.");
