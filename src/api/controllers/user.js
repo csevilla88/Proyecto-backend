@@ -14,12 +14,11 @@ const register = async (req, res, next) => {
       return res.status(400).json({ message: "Ya existe un usuario con ese email." });
     }
 
-    const newUser = new User({ userName, email, password });
-    if (req.files && req.files.length > 0) {
-      newUser.image = req.files[0].path;
-    } else if (req.file) {
-      newUser.image = req.file.path;
+    if (!req.file) {
+      return res.status(400).json({ message: "La imagen es obligatoria." });
     }
+
+    const newUser = new User({ userName, email, password, image: req.file.path });
 
     const userSaved = await newUser.save();
 
@@ -95,19 +94,19 @@ const updateUser = async (req, res, next) => {
       return res.status(403).json("No puedes cambiar la contraseña de otro usuario.");
     }
 
-    if (req.body.role && req.user.role !== "admin") {
-      return res.status(403).json("No puedes cambiar el rol de un usuario. Solo los admin pueden hacerlo.");
-    }
-
     // Construir objeto de actualización solo con campos permitidos
     const updateFields = {};
     if (req.body.userName) updateFields.userName = req.body.userName;
     if (req.body.email) updateFields.email = req.body.email;
-    if (req.body.role && req.user.role === "admin") updateFields.role = req.body.role;
 
     // Si se actualiza la contraseña, encriptarla antes de guardar
     if (req.body.password) {
-      updateFields.password = await bcrypt.hash(req.body.password, 10);
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json("Usuario no encontrado.");
+      }
+      user.password = req.body.password;
+      await user.save();
     }
 
     // Gestión de imagen. Si hay nueva borrar la anterior, si no conservar 
